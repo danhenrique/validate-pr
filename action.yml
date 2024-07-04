@@ -1,18 +1,17 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Validate Pull Request'
+description: 'A GitHub Action to validate pull requests based on specific criteria.'
+author: 'danhenrique'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  validations:
+    description: 'List of validation types to be performed separated by commas'
     required: true
-    default: '1000'
 
 # Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+# outputs:
+#   time:
+#     description: 'Your output description here'
 
 runs:
   using: node20
