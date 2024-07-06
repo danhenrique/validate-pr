@@ -4,24 +4,23 @@ const { pullRequestHasMandatoryLabels } = require('../../src/validations/require
 const { ValidationError } = require('../../src/exceptions/validation-error')
 
 describe('validateLabels', () => {
-  it('should return true if all required labels are present', () => {
+  it('should not throw any validation error.', () => {
     const pullRequest = {
       labels: [{ name: 'bug' }, { name: 'enhancement' }]
     };
     const requiredLabels = ['bug', 'enhancement'];
 
-    const result = pullRequestHasMandatoryLabels(pullRequest, requiredLabels);
-    expect(result).toBe(true);
+    pullRequestHasMandatoryLabels(pullRequest, requiredLabels);
+    expect(() => pullRequestHasMandatoryLabels(pullRequest, requiredLabels).not.toThrow(ValidationError));
   });
 
-  it('should return false if some required labels are missing', () => {
+  it('should throw validation error.', () => {
     // Mock pullRequest with different labels
     const pullRequest = {
       labels: [{ name: 'bug' }]
     };
     const requiredLabels = ['bug', 'enhancement'];
 
-    pullRequestHasMandatoryLabels(pullRequest, requiredLabels);
-    expect(() => pullRequestHasMandatoryLabels(pullRequest, requiredLabels)).toThrow();
+    expect(() => pullRequestHasMandatoryLabels(pullRequest, requiredLabels).toThrow(ValidationError));
   });
 });
