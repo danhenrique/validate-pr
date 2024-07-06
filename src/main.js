@@ -1,5 +1,6 @@
 const core = require('@actions/core')
-const { wait } = require('./wait')
+const github = require('@actions/github')
+const { pullRequestHasMandatoryLabels } = require('./validations/required-labels')
 
 /**
  * The main function for the action.
@@ -7,24 +8,38 @@ const { wait } = require('./wait')
  */
 async function run() {
   try {
-    const ms = core.getInput('milliseconds', { required: true })
+    const validations = core.getInput('validations', { required: true }).replace(/\s/g, '').split(',');
+    const { context } = github;
+    const pr = context.payload.pull_request;
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    if (!pr) {
+      core.setFailed('This action must be run in a pull_request event.');
+      return ;
+    }
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    core.info(`PR Number: ${pr.number}`);
+    core.info(`PR Title: ${pr.title}`);
+    core.info(`PR URL: ${pr.html_url}`);
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    core.info('PR Validation action started.');
+    core.debug(`Validations to be performed: ${validations.join(', ')}`);
+
+    for (const validation of validations) {
+      switch (validation) {
+        case 'required-labels':
+          const requiredLabels = core.getInput('required-labels', { required: true }).replace(/\s/g, '').split(',');
+          pullRequestHasMandatoryLabels(pr, requiredLabels);
+          break;
+        default:
+          core.warning(`Unknown validation type: ${validation}`);
+      }
+    }
+
+    core.info('All validations passed!');
   } catch (error) {
     // Fail the workflow run if an error occurs
     core.setFailed(error.message)
   }
 }
 
-module.exports = {
-  run
-}
+module.exports = { run }

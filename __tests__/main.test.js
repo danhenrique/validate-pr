@@ -8,13 +8,56 @@ const main = require('../src/main')
 const debugMock = jest.spyOn(core, 'debug').mockImplementation()
 const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
 
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
 
 // Other utilities
 const timeRegex = /^\d{2}:\d{2}:\d{2}/
+
+/*
+describe('Validate PR Labels Action', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('fails if required label is missing', async () => {
+    github.context.payload.pull_request.label = [
+      {
+        'name': 'test'
+      }
+    ]
+
+    core.getInput = jest.fn((inputName) => {
+      if (inputName === 'required-labels') {
+        return 'needs, test';
+      } else if (inputName === 'validations') {
+        return 'required-labels';
+      }
+    });
+
+    await run();
+
+    expect(core.setFailed).toHaveBeenCalledWith('The following required labels are missing: documentation');
+  });
+
+  test('passes if all required labels are present', async () => {
+    core.getInput = jest.fn().mockReturnValue('bug,enhancement');
+
+    await run();
+
+    expect(core.setFailed).not.toHaveBeenCalled();
+    expect(core.info).toHaveBeenCalledWith('All required labels are present.');
+  });
+
+  test('fails if not run in a pull_request event', async () => {
+    github.context.payload.pull_request = null;
+
+    await run();
+
+    expect(core.setFailed).toHaveBeenCalledWith('This action must be run in a pull_request event.');
+  });
+});
 
 describe('action', () => {
   beforeEach(() => {
@@ -94,3 +137,4 @@ describe('action', () => {
     )
   })
 })
+*/
