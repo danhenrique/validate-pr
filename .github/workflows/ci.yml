@@ -59,7 +59,3 @@ jobs:
         with:
           validations: required-labels
           required-labels: bug, enhancement
-
-      - name: Print Output
-        id: output
-        run: echo "${{ steps.test-action.outputs.time }}"
