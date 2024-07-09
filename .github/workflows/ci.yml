@@ -58,4 +58,4 @@ jobs:
         uses: ./
         with:
           validations: required-labels
-          required-labels: bug, enhancement
+          required-labels: enhancement
