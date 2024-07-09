@@ -13,6 +13,7 @@ function pullRequestHasMandatoryLabels(pullRequest, requiredLabels) {
     throw new ValidationError(`The pull request doesn't have the required labels. Required labels missing: ${missingLabels.join(', ')}.`);
   }
   core.info('Required labels validation passed!')
+  return true;
 }
 
 module.exports = { pullRequestHasMandatoryLabels }

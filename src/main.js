@@ -8,21 +8,20 @@ const { pullRequestHasMandatoryLabels } = require('./validations/required-labels
  */
 async function run() {
   try {
+    core.info('PR Validation action started.');
     const validations = core.getInput('validations', { required: true }).replace(/\s/g, '').split(',');
+    core.debug(`Validations to be performed: ${validations.join(', ')}`);
+
     const { context } = github;
+    core.debug(`Github context founded`);
     const pr = context.payload.pull_request;
-
-    if (!pr) {
-      core.setFailed('This action must be run in a pull_request event.');
-      return ;
-    }
-
-    core.info(`PR Number: ${pr.number}`);
     core.info(`PR Title: ${pr.title}`);
     core.info(`PR URL: ${pr.html_url}`);
 
-    core.info('PR Validation action started.');
-    core.debug(`Validations to be performed: ${validations.join(', ')}`);
+    if (!pr) {
+      core.setFailed('This action must be run in a pull_request event.');
+      return
+    }
 
     for (const validation of validations) {
       switch (validation) {
