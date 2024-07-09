@@ -13,12 +13,15 @@ let inputs = {}
 const infoMock = jest.spyOn(core, 'info').mockImplementation()
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
 const originalContext = { ...github.context }
-jest.spyOn(core, 'getInput').mockImplementation((name) => {
+jest.spyOn(core, 'getInput').mockImplementation(name => {
   return inputs[name]
 })
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
-const pullRequestHasMandatoryLabelsMock = jest.spyOn(requiredLabels, 'pullRequestHasMandatoryLabels')
+const pullRequestHasMandatoryLabelsMock = jest.spyOn(
+  requiredLabels,
+  'pullRequestHasMandatoryLabels'
+)
 
 describe('running on pull request event', () => {
   beforeAll(() => {
@@ -30,7 +33,7 @@ describe('running on pull request event', () => {
         labels: [{ name: 'bug' }, { name: 'enhancement' }]
       }
     }
-  });
+  })
 
   beforeEach(() => {
     inputs = {}
@@ -38,7 +41,7 @@ describe('running on pull request event', () => {
 
   it('pull request with required labels w/ spaces', async () => {
     inputs = {
-      'validations': 'required-labels',
+      validations: 'required-labels',
       'required-labels': 'bug, enhancement'
     }
 
@@ -50,7 +53,7 @@ describe('running on pull request event', () => {
 
   it('pull request with required labels w/o spaces', async () => {
     inputs = {
-      'validations': 'required-labels',
+      validations: 'required-labels',
       'required-labels': 'bug,enhancement'
     }
 
@@ -62,14 +65,16 @@ describe('running on pull request event', () => {
 
   it('pull request without required labels', async () => {
     inputs = {
-      'validations': 'required-labels',
+      validations: 'required-labels',
       'required-labels': 'tested'
     }
 
-    let requiredLabels = inputs['required-labels'].replace(/\s/g, '').split(',')
+    //let labels = inputs['required-labels'].replace(/\s/g, '').split(',')
     await main.run()
 
     expect(runMock).toHaveBeenCalledTimes(1)
-    expect(setFailedMock).toHaveBeenCalledWith(`The pull request doesn't have the required labels. Required labels missing: tested.`)
+    expect(setFailedMock).toHaveBeenCalledWith(
+      `The pull request doesn't have the required labels. Required labels missing: tested.`
+    )
   })
 })
