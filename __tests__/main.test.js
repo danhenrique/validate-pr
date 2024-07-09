@@ -2,139 +2,79 @@
  * Unit tests for the action's main functionality, src/main.js
  */
 const core = require('@actions/core')
+const github = require('@actions/github')
 const main = require('../src/main')
+const requiredLabels = require('../src/validations/required-labels')
+const { ValidationError } = require('../src/exceptions/validation-error')
 
-// Mock the GitHub Actions core library
+let inputs = {}
+
+// Mock the GitHub Actions libraries
+const infoMock = jest.spyOn(core, 'info').mockImplementation()
 const debugMock = jest.spyOn(core, 'debug').mockImplementation()
-const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-
+const originalContext = { ...github.context }
+jest.spyOn(core, 'getInput').mockImplementation((name) => {
+  return inputs[name]
+})
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
+const pullRequestHasMandatoryLabelsMock = jest.spyOn(requiredLabels, 'pullRequestHasMandatoryLabels')
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
+describe('running on pull request event', () => {
+  beforeAll(() => {
+    github.context.payload = {
+      pull_request: {
+        number: 1,
+        title: 'Test PR',
+        html_url: '',
+        labels: [{ name: 'bug' }, { name: 'enhancement' }]
+      }
+    }
+  });
 
-/*
-describe('Validate PR Labels Action', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('fails if required label is missing', async () => {
-    github.context.payload.pull_request.label = [
-      {
-        'name': 'test'
-      }
-    ]
-
-    core.getInput = jest.fn((inputName) => {
-      if (inputName === 'required-labels') {
-        return 'needs, test';
-      } else if (inputName === 'validations') {
-        return 'required-labels';
-      }
-    });
-
-    await run();
-
-    expect(core.setFailed).toHaveBeenCalledWith('The following required labels are missing: documentation');
-  });
-
-  test('passes if all required labels are present', async () => {
-    core.getInput = jest.fn().mockReturnValue('bug,enhancement');
-
-    await run();
-
-    expect(core.setFailed).not.toHaveBeenCalled();
-    expect(core.info).toHaveBeenCalledWith('All required labels are present.');
-  });
-
-  test('fails if not run in a pull_request event', async () => {
-    github.context.payload.pull_request = null;
-
-    await run();
-
-    expect(core.setFailed).toHaveBeenCalledWith('This action must be run in a pull_request event.');
-  });
-});
-
-describe('action', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
+    inputs = {}
   })
 
-  it('sets the time output', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return '500'
-        default:
-          return ''
-      }
-    })
+  it('pull request with required labels w/ spaces', async () => {
+    inputs = {
+      'validations': 'required-labels',
+      'required-labels': 'bug, enhancement'
+    }
 
     await main.run()
-    expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      expect.stringMatching(timeRegex)
-    )
+    expect(runMock).toHaveBeenCalledTimes(1)
+    expect(infoMock).toHaveBeenCalledWith('All validations passed!')
+    expect(pullRequestHasMandatoryLabelsMock()).toBeTruthy()
   })
 
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
-        default:
-          return ''
-      }
-    })
+  it('pull request with required labels w/o spaces', async () => {
+    inputs = {
+      'validations': 'required-labels',
+      'required-labels': 'bug,enhancement'
+    }
 
     await main.run()
-    expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds not a number'
-    )
+    expect(runMock).toHaveBeenCalledTimes(1)
+    expect(infoMock).toHaveBeenCalledWith('All validations passed!')
+    expect(pullRequestHasMandatoryLabelsMock()).toBeTruthy()
   })
 
-  it('fails if no input is provided', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          throw new Error('Input required and not supplied: milliseconds')
-        default:
-          return ''
-      }
-    })
+  it('pull request without required labels', async () => {
+    inputs = {
+      'validations': 'required-labels',
+      'required-labels': 'tested'
+    }
 
+    let requiredLabels = inputs['required-labels'].replace(/\s/g, '').split(',')
     await main.run()
-    expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'Input required and not supplied: milliseconds'
-    )
+    expect(runMock).toHaveBeenCalledTimes(1)
+    expect(setFailedMock).toHaveBeenCalledWith(`The pull request doesn't have the required labels. Required labels missing: tested.`)
+    expect(pullRequestHasMandatoryLabelsMock).toHaveBeenCalledTimes(1)
+    expect(pullRequestHasMandatoryLabelsMock).toHaveBeenCalledWith(github.context.payload.pull_request, requiredLabels)
   })
 })
-*/
