@@ -2,95 +2,79 @@
  * Unit tests for the action's main functionality, src/main.js
  */
 const core = require('@actions/core')
+const github = require('@actions/github')
 const main = require('../src/main')
+const requiredLabels = require('../src/validations/required-labels')
+const { ValidationError } = require('../src/exceptions/validation-error')
 
-// Mock the GitHub Actions core library
-const debugMock = jest.spyOn(core, 'debug').mockImplementation()
-const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
+let inputs = {}
+
+// Mock the GitHub Actions libraries
+const infoMock = jest.spyOn(core, 'info').mockImplementation()
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
-
+const originalContext = { ...github.context }
+jest.spyOn(core, 'getInput').mockImplementation(name => {
+  return inputs[name]
+})
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
+const pullRequestHasMandatoryLabelsMock = jest.spyOn(
+  requiredLabels,
+  'pullRequestHasMandatoryLabels'
+)
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
+describe('running on pull request event', () => {
+  beforeAll(() => {
+    github.context.payload = {
+      pull_request: {
+        number: 1,
+        title: 'Test PR',
+        html_url: '',
+        labels: [{ name: 'bug' }, { name: 'enhancement' }]
+      }
+    }
+  })
 
-describe('action', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    inputs = {}
   })
 
-  it('sets the time output', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return '500'
-        default:
-          return ''
-      }
-    })
+  it('pull request with required labels w/ spaces', async () => {
+    inputs = {
+      validations: 'required-labels',
+      'required-labels': 'bug, enhancement'
+    }
 
     await main.run()
-    expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      expect.stringMatching(timeRegex)
-    )
+    expect(runMock).toHaveBeenCalledTimes(1)
+    expect(infoMock).toHaveBeenCalledWith('All validations passed!')
   })
 
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
-        default:
-          return ''
-      }
-    })
+  it('pull request with required labels w/o spaces', async () => {
+    inputs = {
+      validations: 'required-labels',
+      'required-labels': 'bug,enhancement'
+    }
 
     await main.run()
-    expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds not a number'
-    )
+    expect(runMock).toHaveBeenCalledTimes(1)
+    expect(infoMock).toHaveBeenCalledWith('All validations passed!')
   })
 
-  it('fails if no input is provided', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          throw new Error('Input required and not supplied: milliseconds')
-        default:
-          return ''
-      }
-    })
+  it('pull request without required labels', async () => {
+    inputs = {
+      validations: 'required-labels',
+      'required-labels': 'tested'
+    }
 
+    //let labels = inputs['required-labels'].replace(/\s/g, '').split(',')
     await main.run()
-    expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'Input required and not supplied: milliseconds'
+    expect(runMock).toHaveBeenCalledTimes(1)
+    expect(setFailedMock).toHaveBeenCalledWith(
+      `The pull request doesn't have the required labels. Required labels missing: tested.`
     )
   })
 })
