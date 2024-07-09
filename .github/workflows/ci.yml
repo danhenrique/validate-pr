@@ -57,7 +57,8 @@ jobs:
         id: test-action
         uses: ./
         with:
-          milliseconds: 1000
+          validations: required-labels
+          required-labels: bug, enhancement
 
       - name: Print Output
         id: output
