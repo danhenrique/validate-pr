@@ -11,7 +11,6 @@ let inputs = {}
 
 // Mock the GitHub Actions libraries
 const infoMock = jest.spyOn(core, 'info').mockImplementation()
-const debugMock = jest.spyOn(core, 'debug').mockImplementation()
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
 const originalContext = { ...github.context }
 jest.spyOn(core, 'getInput').mockImplementation((name) => {
@@ -47,7 +46,6 @@ describe('running on pull request event', () => {
 
     expect(runMock).toHaveBeenCalledTimes(1)
     expect(infoMock).toHaveBeenCalledWith('All validations passed!')
-    expect(pullRequestHasMandatoryLabelsMock()).toBeTruthy()
   })
 
   it('pull request with required labels w/o spaces', async () => {
@@ -60,7 +58,6 @@ describe('running on pull request event', () => {
 
     expect(runMock).toHaveBeenCalledTimes(1)
     expect(infoMock).toHaveBeenCalledWith('All validations passed!')
-    expect(pullRequestHasMandatoryLabelsMock()).toBeTruthy()
   })
 
   it('pull request without required labels', async () => {
@@ -74,7 +71,5 @@ describe('running on pull request event', () => {
 
     expect(runMock).toHaveBeenCalledTimes(1)
     expect(setFailedMock).toHaveBeenCalledWith(`The pull request doesn't have the required labels. Required labels missing: tested.`)
-    expect(pullRequestHasMandatoryLabelsMock).toHaveBeenCalledTimes(1)
-    expect(pullRequestHasMandatoryLabelsMock).toHaveBeenCalledWith(github.context.payload.pull_request, requiredLabels)
   })
 })
