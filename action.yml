@@ -9,7 +9,8 @@ inputs:
     description: 'List of validation types to be performed separated by commas'
     required: true
   required-labels:
-    description: 'List of labels that must be present in the PR. Ex.: "bug,feature"'
+    description:
+      'List of labels that must be present in the PR. Ex.: "bug,feature"'
     required: false
 
 # Define your outputs here.
